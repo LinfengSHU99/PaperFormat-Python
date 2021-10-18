@@ -5,16 +5,20 @@ from lxml import etree
 import sys
 from xml.dom import minidom
 
+dir = 'C:\\Users\\S\\Desktop\\论文格式'
+
+
+# dir = 'C:\\Users\\97498\\Desktop\\论文格式'
 
 def unzip():
-    os.chdir('C:\\Users\\97498\\Desktop\\论文格式')
+    os.chdir(dir)
     f = zipfile.ZipFile("肖露露毕业论文.docx")  # 打开需要修改的docx文件
     f.extractall('./workfolder')  # 提取要修改的docx文件里的所有文件到workfolder文件夹
     f.close()
 
 
 def zipToDocx():
-    newf = zipfile.ZipFile('C:\\Users\\97498\\Desktop\\论文格式\\new肖露露毕业论文.docx', 'w')  # 创建一个新的docx文件，作为修改后的docx
+    newf = zipfile.ZipFile('../new肖露露毕业论文.docx', 'w')  # 创建一个新的docx文件，作为修改后的docx
     for root, dirs, files in os.walk('./'):  # 将workfolder文件夹所有的文件压缩至new.docx
 
         for file in files:
@@ -92,12 +96,34 @@ def getProperties(run, styles) -> dict:
 
 
 def getFonts(run, propertydict, styles):
+    def addFontToPropertydict(propertydict, font):
+        propertydict['eastAsia'] = font.getAttribute('w:eastAsia') \
+            if font.getAttribute('w:eastAsia') != '' and propertydict['eastAsia'] is None else \
+            propertydict['eastAsia']
+        propertydict['ascii'] = font.getAttribute('w:ascii') \
+            if font.getAttribute('w:ascii') != '' and propertydict['ascii'] is None else \
+            propertydict['ascii']
+        if font.getAttribute('w:eastAsiaTheme'):
+            propertydict['eastAsia'] = '等线 Light' if font.getAttribute('w:eastAsiaTheme')[0:5] == 'major' else '等线'
+        if font.getAttribute('w:asciiTheme'):
+            propertydict['ascii'] = '等线 Light' if font.getAttribute('w:asciiTheme')[0:5] == 'major' else '等线'
+
+    def searchInStyle(propertydict, styles, styleId):
+        pre_style = None
+        for style in styles.getElementsByTagName('w:style'):
+            if style.getAttribute('w:styleId') == styleId:
+                rfonts = style.getElementsByTagName('w:rFonts')
+                if len(rfonts) != 0:
+                    font = rfonts[0]
+                    addFontToPropertydict(propertydict, font)
+                return style
+
     # 在rPr中查找
     rfonts = run.getElementsByTagName('w:rFonts')
     if len(rfonts) != 0:
         font = rfonts[0]
-        propertydict['eastAsia'] = font.getAttribute('w:eastAsia') if font.getAttribute('w:eastAsia') != '' else None
-        propertydict['ascii'] = font.getAttribute('w:ascii') if font.getAttribute('w:ascii') != '' else None
+        addFontToPropertydict(propertydict, font)
+
     # 在RunStyle中查找
     if propertydict['eastAsia'] is None or propertydict['ascii'] is None:
 
@@ -105,30 +131,14 @@ def getFonts(run, propertydict, styles):
         if len(rstyle) != 0:
             rsid = rstyle[0].getAttribute('w:val')
 
-            pre_style = None
-
             # 循环查询，以查询指定rStyle的父Style
             while rsid != '':
-                for style in styles.getElementsByTagName('w:style'):
-                    if style.getAttribute('w:styleId') == rsid:
-                        rfonts = style.getElementsByTagName('w:rFonts')
-                        if len(rfonts) != 0:
-                            font = rfonts[0]
-                            propertydict['eastAsia'] = font.getAttribute('w:eastAsia') \
-                                if font.getAttribute('w:eastAsia') != '' and propertydict['eastAsia'] is None else \
-                                propertydict['eastAsia']
-                            propertydict['ascii'] = font.getAttribute('w:ascii') \
-                                if font.getAttribute('w:ascii') != '' and propertydict['ascii'] is None else \
-                                propertydict['ascii']
-                        pre_style = style
-                        break
-
+                pre_style = searchInStyle(propertydict, styles, rsid)
                 rsid = ''
                 if propertydict['eastAsia'] is None or propertydict['ascii'] is None:
                     # 递归在basedOn style中查找
                     if len(pre_style.getElementsByTagName('w:basedOn')) != 0:
                         rsid = pre_style.getElementsByTagName('w:basedOn')[0].getAttribute('w:val')
-
 
     # 在pStyle中查找
     if propertydict['eastAsia'] is None or propertydict['ascii'] is None:
@@ -139,31 +149,14 @@ def getFonts(run, propertydict, styles):
                 pstyle = ppr.getElementsByTagName('w:pStyle')[0]
                 psid = pstyle.getAttribute('w:val')
 
-
-
                 # 循环查询，以查询指定pStyle的父Style
-                pre_style = None
                 while psid != '':
-                    for style in styles.getElementsByTagName('w:style'):
-                        if style.getAttribute('w:styleId') == psid:
-                            rfonts = style.getElementsByTagName('w:rFonts')
-                            if len(rfonts) != 0:
-                                font = rfonts[0]
-                                propertydict['eastAsia'] = font.getAttribute('w:eastAsia') \
-                                    if font.getAttribute('w:eastAsia') != '' and propertydict['eastAsia'] is None else \
-                                    propertydict['eastAsia']
-                                propertydict['ascii'] = font.getAttribute('w:ascii') \
-                                    if font.getAttribute('w:ascii') != '' and propertydict['ascii'] is None else \
-                                    propertydict['ascii']
-                            pre_style = style
-                            break
-
+                    pre_style = searchInStyle(propertydict, styles, psid)
                     psid = ''
                     if propertydict['eastAsia'] is None or propertydict['ascii'] is None:
                         # 递归在basedOn style中查找
                         if len(pre_style.getElementsByTagName('w:basedOn')) != 0:
                             psid = pre_style.getElementsByTagName('w:basedOn')[0].getAttribute('w:val')
-
 
     # 查询default pStyle
     if propertydict['eastAsia'] is None or propertydict['ascii'] is None:
@@ -173,14 +166,8 @@ def getFonts(run, propertydict, styles):
                 rfonts = style.getElementsByTagName('w:rFonts')
                 if len(rfonts) != 0:
                     font = rfonts[0]
-                    propertydict['eastAsia'] = font.getAttribute('w:eastAsia') \
-                        if font.getAttribute('w:eastAsia') != '' and propertydict['eastAsia'] is None else \
-                        propertydict['eastAsia']
-                    propertydict['ascii'] = font.getAttribute('w:ascii') \
-                        if font.getAttribute('w:ascii') != '' and propertydict['ascii'] is None else \
-                        propertydict['ascii']
+                    addFontToPropertydict(propertydict, font)
                 break
-
 
     if propertydict['eastAsia'] is None or propertydict['ascii'] is None:
 
@@ -189,9 +176,4 @@ def getFonts(run, propertydict, styles):
             rfonts = rprdefault[0].getElementsByTagName('w:rFonts')
             if len(rfonts) != 0:
                 font = rfonts[0]
-                propertydict['eastAsia'] = font.getAttribute('w:eastAsia') \
-                    if font.getAttribute('w:eastAsia') != '' and propertydict['eastAsia'] is None else \
-                    propertydict['eastAsia']
-                propertydict['ascii'] = font.getAttribute('w:ascii') \
-                    if font.getAttribute('w:ascii') != '' and propertydict['ascii'] is None else \
-                    propertydict['ascii']
+                addFontToPropertydict(propertydict, font)

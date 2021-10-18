@@ -8,6 +8,9 @@ from xml.dom import minidom
 import AddStyle
 import Utildom
 
+
+dir = 'C:\\Users\\S\\Desktop\\论文格式'
+#dir = 'C:\\Users\\97498\\Desktop\\论文格式'
 Utildom.unzip()
 os.chdir('workfolder')  # 修改当前工作目录到workfolder
 
@@ -38,9 +41,8 @@ with open(file='./word/document.xml', mode='w', encoding='utf-8') as f:  #解码
     print('ok')
 
 
-
 AddStyle.r()
-styles = minidom.parse('C:\\Users\\97498\\Desktop\\论文格式\\workfolder\\word\\styles.xml')
+styles = minidom.parse(dir + '\\workfolder\\word\\styles.xml')
 doc = minidom.parse('./word/document.xml')
 paragraphlist = []
 document = doc.firstChild
@@ -51,14 +53,14 @@ for subnode in body.childNodes:
     if subnode.tagName == 'w:p':
         paragraphlist.append(subnode)
 
-with open('C:\\Users\\97498\\Desktop\\论文格式\\格式.txt', 'w', encoding='utf-8') as ftxt:
+with open(dir + '\\格式.txt', 'w', encoding='utf-8') as ftxt:
     for p in paragraphlist:
         #print(Utildom.getFullText(p))
 
         for run in p.getElementsByTagName('w:r'):
             if run.getElementsByTagName('w:t'):
                 text = run.getElementsByTagName('w:t')[0].childNodes[0].data
-            ftxt.write(str(Utildom.getProperties(run, styles)) + '    ' + text + '\n' )
+                ftxt.write(str(Utildom.getProperties(run, styles)) + '    ' + text + '\n' )
 
 Utildom.zipToDocx()
 os.chdir('../')  # 切换工作目录至原来的路径

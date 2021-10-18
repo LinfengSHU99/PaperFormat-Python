@@ -7,7 +7,10 @@ import sys
 import AddStyle
 import Util
 
-os.chdir('C:\\Users\\97498\\Desktop\\论文格式')
+dir = 'C:\\Users\\S\\Desktop\\论文格式'
+#dir = 'C:\\Users\\97498\\Desktop\\论文格式'
+
+os.chdir(dir)
 f = zipfile.ZipFile("肖露露毕业论文.docx")  # 打开需要修改的docx文件
 f.extractall('./workfolder')  # 提取要修改的docx文件里的所有文件到workfolder文件夹
 f.close()
