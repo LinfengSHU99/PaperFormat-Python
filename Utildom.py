@@ -154,6 +154,7 @@ class Util:
         return False
 
     # 返回一个body的子元素列表，该列表中的子元素都是位于目录之后的元素
+    # 挨个判断body的子节点，找到最后一个判断为目录的子节点，返回该节点之后的节点的列表，该方法对isContent的准确性要求很高。
     @classmethod
     def getChildNodesAfterContent(cls) -> list:
         childnode_list = cls.doc.childNodes[0].childNodes[0].childNodes
@@ -162,10 +163,6 @@ class Util:
         for i in range(len(childnode_list)):
             if cls.isContent(childnode_list[i]):
                 location = i
-                begin = True
-
-            elif begin:
-                break
         return childnode_list[location + 1:]
 
     # @classmethod

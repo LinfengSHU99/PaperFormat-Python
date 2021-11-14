@@ -25,11 +25,13 @@ paragraphlist = []
 document = doc.firstChild
 body = document.firstChild
 
-for subnode in body.childNodes:
-    if subnode.tagName == 'w:p':
-        paragraphlist.append(subnode)
+# for subnode in body.childNodes:
+#     if subnode.tagName == 'w:p':
+#         paragraphlist.append(subnode)
 
-for p in paragraphlist:
+# 输出所有目录之后，判断为标题的段落
+para_after_content = Util.getChildNodesAfterContent()
+for p in para_after_content:
     if Util.isTitle(p):
         typeOfTitle = Util.titleType(p)
         """修改标题格式，之后再考虑"""
@@ -60,7 +62,6 @@ for p in paragraphlist:
 #                 ftxt.write(str(Util.getRunProperties(run)) + '    ' + text + '\n')
 for t in Util.content_text_list:
     print(t + '\n')
-a = Util.content_text_list
 FormatMatch.matchNormal(doc)
 Util.zipToDocx()
 os.chdir('../')  # 切换工作目录至原来的路径
