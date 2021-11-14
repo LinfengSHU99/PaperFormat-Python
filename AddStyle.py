@@ -3,7 +3,8 @@ import os
 import re
 from lxml import etree
 import sys
-import Util
+from Utildom import Util
+from xml.dom import minidom
 def r():
     w = '{http://schemas.openxmlformats.org/wordprocessingml/2006/main}'
     #os.chdir('workfolder')
@@ -24,3 +25,4 @@ def r():
 
 
     treestyle.write('./word/styles.xml', encoding='utf-8')
+    Util.styles = minidom.parse(Util.dir + '\\workfolder\\word\\styles.xml')
