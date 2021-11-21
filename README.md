@@ -14,5 +14,10 @@
 ### 更新的功能：
 &emsp;&emsp;针对使用word自动编号的标题，仿照大连理工的程序，增加了对该种标题的判断功能（使用与目录各个段落的最小编辑距离辅助判断）
 ### 待解决的问题：
-&emsp;&emsp;需要增加对使用word自动编号的标题的标题类别判断功能。
-&emsp;&emsp;在王凯毕业论文中有一些混合使用手动编号和自动编号的四级标题，需要更完善的考虑。
+~~&emsp;&emsp;需要增加对使用word自动编号的标题的标题类别判断功能~~
+~~在王凯毕业论文中有一些混合使用手动编号和自动编号的四级标题，需要更完善的考虑。~~
+
+## 2021.11.21
+### Update:
+&emsp;&emsp;Add some conditional sentence to decide which type the title with auto numbering
+belongs to. Fix a bug that leads to the failure of recognizing the content part.

@@ -25,4 +25,4 @@ def r():
 
 
     treestyle.write('./word/styles.xml', encoding='utf-8')
-    Util.styles = minidom.parse(Util.dir + '\\workfolder\\word\\styles.xml')
+    Util.styles = minidom.parse(Util.dir + '/workfolder/word/styles.xml')

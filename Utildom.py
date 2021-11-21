@@ -7,7 +7,7 @@ from xml.dom import minidom
 
 
 class Util:
-    dir = 'C:\\Users\\97498\\Desktop\\论文格式'
+    dir = None
     styles = None
     themes = None
     doc = None
@@ -27,7 +27,7 @@ class Util:
     @classmethod
     def unzip(cls):
         os.chdir(cls.dir)
-        f = zipfile.ZipFile("王凯毕业论文.docx")  # 打开需要修改的docx文件
+        f = zipfile.ZipFile("张军毕业论文.docx")  # 打开需要修改的docx文件
         f.extractall('./workfolder')  # 提取要修改的docx文件里的所有文件到workfolder文件夹
         f.close()
 
@@ -37,7 +37,7 @@ class Util:
         with open(file='./word/document.xml', mode='w', encoding='utf-8') as f:  # 解码设置为utf-8
             cls.doc.writexml(f, encoding="utf-8")
 
-        newf = zipfile.ZipFile(cls.dir + '/new王凯毕业论文.docx', 'w')  # 创建一个新的docx文件，作为修改后的docx
+        newf = zipfile.ZipFile(cls.dir + '/new张军毕业论文.docx', 'w')  # 创建一个新的docx文件，作为修改后的docx
         for root, dirs, files in os.walk('./'):  # 将workfolder文件夹所有的文件压缩至new.docx
             for file in files:
                 # root = os.path.relpath(root[,'workfolder'])
@@ -150,7 +150,6 @@ class Util:
         for i in range(len(reg)):
             reg[i] = re.compile(reg[i])
 
-        type = 0
         for i in ['附录', '致谢', '参考文献']:
             if i in text.replace(' ', ''):
                 return 0
@@ -158,7 +157,15 @@ class Util:
         for i in reversed(range(len(reg))):
             if re.match(reg[i], text):
                 return i
-        return type
+        if p.getElementsByTagName('w:ilvl'):
+            ilvl = p.getElementsByTagName('w:ilvl')[0]
+            if ilvl.getAttribute('w:val') == '0':
+                return 0
+            elif ilvl.getAttribute('w:val') == '1':
+                return 1
+            else:
+                return 2
+        return 0
 
     @classmethod
     def modifyTitle(cls, p, type, doc):
@@ -205,6 +212,11 @@ class Util:
     @classmethod
     def isContent(cls, p) -> bool:
         text = cls.getFullText(p)
+        # If a node contains 'w:sdtContent', or itself is 'w:sdtContent',assume that it belongs to content part.
+        # It is because sometimes <w:stdContent> node may contain the entire content part,
+        # and following judge sentences will fail.
+        if p.tagName == 'w:sdtContent' or p.getElementsByTagName('w:sdtContent'):
+            return True
         # 当段落内含有hyperlink和fldChar时，该段落一定为目录的一部分（该方法只能判断目录的子集，且有一些含有参考文献引用标记和超链接的段落
         # 也含有这两个节点）。
         if p.getElementsByTagName('w:hyperlink') and p.getElementsByTagName('w:fldChar') and len(text) < 30:
