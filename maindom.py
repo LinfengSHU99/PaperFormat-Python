@@ -17,9 +17,11 @@ AddStyle.r()
 doc = minidom.parse('./word/document.xml')
 styles = minidom.parse(dir + '\\workfolder\\word\\styles.xml')
 themes = minidom.parse(dir + '/workfolder/word/theme/theme1.xml')
+numbering = minidom.parse(dir + '/workfolder/word/numbering.xml')
 Util.doc = doc
 Util.styles = styles
 Util.themes = themes
+Util.numbering = numbering
 Util.setUp()
 paragraphlist = []
 document = doc.firstChild
@@ -30,7 +32,7 @@ body = document.firstChild
 #         paragraphlist.append(subnode)
 
 # 输出所有目录之后，判断为标题的段落
-para_after_content = Util.getChildNodesAfterContent()
+para_after_content = Util.getChildNodesOfNormalText()
 for p in para_after_content:
     if Util.isTitle(p):
         typeOfTitle = Util.titleType(p)
@@ -42,8 +44,8 @@ for p in para_after_content:
 # with open(file='./word/document.xml', mode='w', encoding='utf-8') as f:  # 解码设置为utf-8
 #     doc.writexml(f, encoding="utf-8")
 #     print('ok')
-
-
+#
+#
 # with open(dir +'/段落格式.txt', 'w', encoding='utf-8') as pftxt:
 #     for p in paragraphlist:
 #        pftxt.write(str(Util.getParagraphProperties(p)) + '    ' + Util.getFullText(p) + '\n\n')
@@ -62,6 +64,8 @@ for p in para_after_content:
 #                 ftxt.write(str(Util.getRunProperties(run)) + '    ' + text + '\n')
 for t in Util.content_text_list:
     print(t + '\n')
+# for p in Util.getChildNodesOfNormalText():
+#     print(Util.getFullText(p))
 FormatMatch.matchNormal(doc)
 Util.zipToDocx()
 os.chdir('../')  # 切换工作目录至原来的路径

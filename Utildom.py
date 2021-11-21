@@ -14,7 +14,7 @@ class Util:
     normal_run_property = {'eastAsia': "宋体", 'ascii': "Times New Roman", 'sz': "24", 'szCs': None, 'kern': None}
     # 目录字符串列表
     content_text_list = []
-
+    numbering = None
     # dir = 'C:\\Users\\S\\Desktop\\论文格式'
 
 
@@ -27,7 +27,7 @@ class Util:
     @classmethod
     def unzip(cls):
         os.chdir(cls.dir)
-        f = zipfile.ZipFile("张军毕业论文.docx")  # 打开需要修改的docx文件
+        f = zipfile.ZipFile("王凯毕业论文.docx")  # 打开需要修改的docx文件
         f.extractall('./workfolder')  # 提取要修改的docx文件里的所有文件到workfolder文件夹
         f.close()
 
@@ -37,7 +37,7 @@ class Util:
         with open(file='./word/document.xml', mode='w', encoding='utf-8') as f:  # 解码设置为utf-8
             cls.doc.writexml(f, encoding="utf-8")
 
-        newf = zipfile.ZipFile(cls.dir + '/new张军毕业论文.docx', 'w')  # 创建一个新的docx文件，作为修改后的docx
+        newf = zipfile.ZipFile(cls.dir + '/new王凯毕业论文.docx', 'w')  # 创建一个新的docx文件，作为修改后的docx
         for root, dirs, files in os.walk('./'):  # 将workfolder文件夹所有的文件压缩至new.docx
             for file in files:
                 # root = os.path.relpath(root[,'workfolder'])
@@ -46,6 +46,7 @@ class Util:
 
         newf.close()
 
+    # 获取一个节点的所有文字
     @classmethod
     def getFullText(cls, p) -> str:
         text = ''
@@ -53,30 +54,93 @@ class Util:
             text += t.childNodes[0].data
         return text
 
+    # 计算两个字符串之间的最小编辑距离，此处替换操作的代价设置为2
+    @classmethod
+    def levenshteinDistance(cls, source, target):
+        def sub_cost(word1, word2, i, j):
+            word1 = ' ' + word1
+            word2 = ' ' + word2
+            if word1[i] == word2[j]:
+                return 0
+            else:
+                return 2
+
+        n = len(source)
+        m = len(target)
+        insert_cost = 1
+        del_cost = 1
+        lst = []
+        tmp = 0
+        tmp2 = 0
+        for i in range(n + 1):
+            if i == 0:
+                for j in range(m + 1):
+                    lst.append(j)
+            else:
+                for j in range(m + 1):
+                    tmp2 = lst[j]
+                    lst[j] = min(lst[j] + insert_cost, lst[j - 1] + del_cost if j - 1 >= 0 else i + insert_cost,
+                                 tmp + sub_cost(source, target, i, j) if j - 1 >= 0 else i - 1 + sub_cost(source,
+                                                                                                          target, i, j))
+                    tmp = tmp2
+        return lst[m]
+
+
     @classmethod
     def isTitle(cls, p) -> bool:
         text = cls.getFullText(p)
-        # if len(p.getElementsByTagName('w:hyperlink')) != 0:  # 如果段落中包含超链接则判断其不为标题（可能为目录）
-        #     return False
-
+        type = 0
         reg = ["[1-9][0-9]*[\s]+?", "[1-9][0-9]*[.．、\u4E00-\u9FA5]", "[1-9][0-9]*\.[1-9][0-9]*",
                "[1-9][0-9]*\.[1-9][0-9]*\.[1-9][0-9]*"]
         for i in range(len(reg)):
             reg[i] = re.compile(reg[i])
-
         match = False
-        if len(text) < 30:
+        if len(text) < 40:
+            for i in ['附录', '致谢', '参考文献']:
+                if i in text.replace(' ', ''):
+                    type = 1
+                    match = True
+                    break
             for i in reversed(range(len(reg))):
                 if re.match(reg[i], text):
-                    # 若匹配的样式是1. xxxx的样式，则查找目录是否有相同的内容，如果有，则判断为标题。因为有些字数少的正文的编号项目也有可能匹配成功。
-                    if i == 1:
-                        for t in cls.content_text_list:
-                            if re.sub('[0-9\.．\s]', '', text) in re.sub('[0-9\.．\s]', '', t):
-                                match = True
-                                break
-                    else:
-                        match = True
+                    type = i
+                    match = True
                     break
+            # 若段落中有自动生成的标号，仿照大连理工的程序进行一系列判断，并利用与目录的最小编辑距离与辅助判断。
+            if p.getElementsByTagName('w:numPr'):
+                numpr = p.getElementsByTagName('w:numPr')[0]
+                ilvl = numpr.getElementsByTagName('w:ilvl')[0]
+                numId = numpr.getElementsByTagName('w:numId')[0]
+                for num in cls.numbering.getElementsByTagName('w:num'):
+                    if num.getAttribute('w:numId') == numId.getAttribute('w:val'):
+                        abstract_numid = num.getElementsByTagName('w:abstractNumId')[0]
+                        for abstract_num in cls.numbering.getElementsByTagName('w:abstractNum'):
+                            if abstract_num.getAttribute('w:abstractNumId') == abstract_numid.getAttribute('w:val'):
+                                for level in abstract_num.getElementsByTagName('w:lvl'):
+                                    if level.getAttribute('w:ilvl') == '0' and level.getElementsByTagName('w:lvlText')[0].getAttribute('w:val') != '%1' and level.getElementsByTagName('w:lvlText')[0].getAttribute('w:val') != '%1.':
+                                        match = False
+                                        break
+                                    elif level.getAttribute('w:ilvl') == '1' and level.getElementsByTagName('w:lvlText')[0].getAttribute('w:val') != '%1.%2':
+                                        for s in cls.content_text_list:
+                                            if cls.levenshteinDistance(text, re.sub('[0-9\.．\s]', '', s)) < len(re.sub('[0-9\.．\s]', '', s)) * 0.2:
+                                                match = True
+                                                break
+                                        break
+                                    elif level.getAttribute('w:ilvl') == '2' :
+                                        if level.getElementsByTagName('w:lvlText')[0].getAttribute('w:val') != '%1.%2.%3':
+                                            match = False
+                                            break
+                                        match = True
+
+                                break
+                        break
+
+            if type == 1:  # 若匹配的样式是1. xxxx的样式，则查找目录是否有相同的内容，如果有，则判断为标题。因为有些字数少的正文的编号项目也有可能匹配成功。
+                for t in cls.content_text_list:
+                    if re.sub('[0-9\.．\s]', '', text) in re.sub('[0-9\.．\s]', '', t):
+                        break
+                else:
+                    match = False
         return match
 
     @classmethod
@@ -87,9 +151,14 @@ class Util:
             reg[i] = re.compile(reg[i])
 
         type = 0
-        for type in reversed(range(len(reg))):
-            if re.match(reg[type], text):
-                return type
+        for i in ['附录', '致谢', '参考文献']:
+            if i in text.replace(' ', ''):
+                return 0
+
+        for i in reversed(range(len(reg))):
+            if re.match(reg[i], text):
+                return i
+        return type
 
     @classmethod
     def modifyTitle(cls, p, type, doc):
@@ -132,13 +201,15 @@ class Util:
                 break
         cls.content_text_list = lst
 
-    # 判断某一段是否为目录
+    # 判断某一节点是否为目录
     @classmethod
     def isContent(cls, p) -> bool:
-        # 当段落内含有hyperlink和fldChar时，该段落一定为目录的一部分（该方法只能判断目录的子集）
-        if p.getElementsByTagName('w:hyperlink') and p.getElementsByTagName('w:fldChar'):
-            return True
         text = cls.getFullText(p)
+        # 当段落内含有hyperlink和fldChar时，该段落一定为目录的一部分（该方法只能判断目录的子集，且有一些含有参考文献引用标记和超链接的段落
+        # 也含有这两个节点）。
+        if p.getElementsByTagName('w:hyperlink') and p.getElementsByTagName('w:fldChar') and len(text) < 30:
+            return True
+
         # 如果某一段文字数小于30且开头有数字，或者摘要，附录，参考文献等字样，最后出现(xx) 或者xx （xx为数字）  等字样，则判断为目录
         if len(text) < 30 and (re.search(re.compile('^[1-9]+'), text) or re.search(re.compile('^摘(\s+)?要'), text) or
                                re.search(re.compile('^致(\s+)?谢'), text) or re.search(re.compile('^参考文献'), text) or
@@ -156,22 +227,33 @@ class Util:
     # 返回一个body的子元素列表，该列表中的子元素都是位于目录之后的元素
     # 挨个判断body的子节点，找到最后一个判断为目录的子节点，返回该节点之后的节点的列表，该方法对isContent的准确性要求很高。
     @classmethod
-    def getChildNodesAfterContent(cls) -> list:
+    def getChildNodesOfNormalText(cls) -> list:
         childnode_list = cls.doc.childNodes[0].childNodes[0].childNodes
-        location = 0
+        location_after_content = 0
+        location_before_reference = 0
         begin = False
         for i in range(len(childnode_list)):
             if cls.isContent(childnode_list[i]):
-                location = i
-        return childnode_list[location + 1:]
+                location_after_content = i
+            if childnode_list[i].tagName == 'w:p' and cls.getFullText(childnode_list[i]).replace(' ','') == '参考文献' and i > location_after_content:
+                location_before_reference = i
+        return childnode_list[location_after_content + 1:location_before_reference]
 
-    # @classmethod
-    # 列表为字体和字号
-    # def getProperties(cls, run, styles) -> dict:
-    #     propertydict = {'eastAsia': None, 'ascii': None, 'sz': None, 'szCs': None, 'kern': None}
-    #     cls.getRunProperties(run, propertydict)
-    #     return propertydict
+    # 判断一段文字是否为图标题
+    @classmethod
+    def isPicTitle(cls, p) -> bool:
+        text = cls.getFullText(p)
+        if len(text) < 30 and text.find(',') == -1 and text.find('，') == -1 and re.search('^[图][0-9]', re.sub('\s', '', text)):
+            return True
+        return False
 
+    # 判断一段文字是否位表标题
+    @classmethod
+    def isTabTitle(cls, p) -> bool:
+        text = cls.getFullText(p)
+        if len(text) < 30 and text.find(',') == -1 and text.find('，') == -1 and re.search('^[表][0-9]', re.sub('\s', '', text)):
+            return True
+        return False
     # 获取一个Run里的所有与字有关(rPr)的里的格式，以字典返回。
     @classmethod
     def getRunProperties(cls, run) -> dict:
@@ -276,7 +358,11 @@ class Util:
 
         # 在pStyle中查找
         if None in propertydict.values():
-            p = run.parentNode
+            # 循环查找run的父节点，直到父节点为<w:p>为止。
+            temp = run
+            while temp.parentNode.tagName != 'w:p':
+                temp = temp.parentNode
+            p = temp.parentNode
             if len(p.getElementsByTagName('w:pPr')) != 0:
                 ppr = p.getElementsByTagName('w:pPr')[0]
                 if len(ppr.getElementsByTagName('w:pStyle')) != 0:
