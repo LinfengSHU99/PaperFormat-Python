@@ -7,14 +7,16 @@ from xml.dom import minidom
 import FormatMatch
 import AddStyle
 from Utildom import Util
+from Table import Table
+
 
 # dir = 'C:\\Users\\S\\Desktop\\论文格式'
-#dir = 'C:\\Users\\97498\\Desktop\\论文格式'
-dir = '/home/s/桌面/paperformat/PaperFormat-Python'
+dir = 'C:\\Users\\97498\\Desktop\\论文格式'
+# dir = '/home/s/桌面/paperformat/PaperFormat-Python'
 Util.dir = dir
 Util.unzip()
 os.chdir('workfolder')  # 修改当前工作目录到workfolder
-AddStyle.r()
+
 
 doc = minidom.parse('./word/document.xml')
 styles = minidom.parse(dir + '/workfolder/word/styles.xml')
@@ -25,6 +27,9 @@ Util.styles = styles
 Util.themes = themes
 Util.numbering = numbering
 Util.setUp()
+
+AddStyle.r()
+
 paragraphlist = []
 document = doc.firstChild
 body = document.firstChild
@@ -70,6 +75,23 @@ for t in Util.content_text_list:
     print(t)
 # for p in Util.getChildNodesOfNormalText():
 #     print(Util.getFullText(p))
+
+
+print('\n------Table------\n')
+Table.styles = styles
+Table.doc = doc
+Table.setup()
+for tbl in Table.tables_with_borders:
+    print(Table.isThreeLineTable(tbl, styles))
+    text = ''
+    for t in tbl.getElementsByTagName('w:t'):
+        text += t.childNodes[0].data
+    print(text)
+
+
 FormatMatch.matchNormal(doc)
+FormatMatch.matchTable()
+
+
 Util.zipToDocx()
 os.chdir('../')  # 切换工作目录至原来的路径

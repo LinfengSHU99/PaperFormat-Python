@@ -8,13 +8,16 @@ from xml.dom import minidom
 
 class Util:
     dir = None
+    doc = None
     styles = None
     themes = None
-    doc = None
+    numbering = None
+    docx_file = '肖露露毕业论文.docx'
+    new_docx_file = 'new肖露露毕业论文.docx'
     normal_run_property = {'eastAsia': "宋体", 'ascii': "Times New Roman", 'sz': "24", 'szCs': None, 'kern': None}
     # 目录字符串列表
     content_text_list = []
-    numbering = None
+
     # dir = 'C:\\Users\\S\\Desktop\\论文格式'
 
 
@@ -24,10 +27,11 @@ class Util:
         # 将所有目录段落加入一个列表
         cls.getContent()
 
+
     @classmethod
     def unzip(cls):
         os.chdir(cls.dir)
-        f = zipfile.ZipFile("张军毕业论文.docx")  # 打开需要修改的docx文件
+        f = zipfile.ZipFile(cls.docx_file)  # 打开需要修改的docx文件
         f.extractall('./workfolder')  # 提取要修改的docx文件里的所有文件到workfolder文件夹
         f.close()
 
@@ -37,7 +41,7 @@ class Util:
         with open(file='./word/document.xml', mode='w', encoding='utf-8') as f:  # 解码设置为utf-8
             cls.doc.writexml(f, encoding="utf-8")
 
-        newf = zipfile.ZipFile(cls.dir + '/new张军毕业论文.docx', 'w')  # 创建一个新的docx文件，作为修改后的docx
+        newf = zipfile.ZipFile(cls.dir + '/' + cls.new_docx_file, 'w')  # 创建一个新的docx文件，作为修改后的docx
         for root, dirs, files in os.walk('./'):  # 将workfolder文件夹所有的文件压缩至new.docx
             for file in files:
                 # root = os.path.relpath(root[,'workfolder'])
@@ -561,7 +565,7 @@ class Util:
         text = ''
         if propertydict['firstLineChars'] is not None:
             if propertydict['firstLineChars'] != reference_paragraph_property[
-                'firstLineChars'] and reference_paragraph_property is not None:
+                'firstLineChars'] and reference_paragraph_property['firstLineChars'] is not None:
                 text += '缩进错误 '
             propertydict['firstLine'] = reference_paragraph_property['firstLine']  # 当firstLineChars存在时，忽略firstLine这个属性
 

@@ -4,44 +4,102 @@ import re
 from lxml import etree
 import sys
 from xml.dom import minidom
+from Utildom import Util
+
 
 # TODO: 有一些表格实际上不是表格而是公式，如何识别出这些作者本意不是表格的表格，忽略它们，是下一个解决的问题
 
 class Table:
+    doc = Util.doc
+    styles = Util.styles
+    tables_with_borders = []
+
+    @classmethod
+    def setup(cls):
+        cls.getTableWithBorders(cls.styles)
+
+    # 从tbl和style中查找表格的总边框信息
+    @classmethod
+    def getTableBorders(cls, tbl, styles):
+        tblBorders = None
+        tblPr = tbl.getElementsByTagName('w:tblPr')[0] if len(tbl.getElementsByTagName('w:tblPr')) > 0 else None
+        if tblPr is not None:
+            tblBorders = tblPr.getElementsByTagName('w:tblBorders')[0] if len(
+                tblPr.getElementsByTagName('w:tblBorders')) > 0 else None
+            if tblBorders is None:
+                tbl_style_id = tblPr.getElementsByTagName('w:tblStyle')[0].getAttribute('w:val') if len(
+                    tblPr.getElementsByTagName('w:tblStyle')) > 0 else None
+                # 循环查找
+                while tbl_style_id is not None:
+                    for style in styles.getElementsByTagName('w:style'):
+                        if style.getAttribute('w:styleId') == tbl_style_id:
+                            tbl_style_id = None
+                            tblBorders = style.getElementsByTagName('w:tblBorders')[0] if len(
+                                style.getElementsByTagName('w:tblBorders')) > 0 else None
+                            if tblBorders is None:
+                                if style.getElementsByTagName('w:basedOn'):
+                                    tbl_style_id = style.getElementsByTagName('w:basedOn')[0].getAttribute('w:val')
+                            break
+            if tblBorders is None:
+                # 如果没有找到，在default style中找
+                for style in styles.getElementsByTagName('w:style'):
+                    if style.getAttribute('w:type') == 'table' and style.getAttribute('w:default') == '1':
+                        tblBorders = style.getElementsByTagName('w:tblBorders')[0] if style.getElementsByTagName(
+                            'w:tblBorders') else None
+
+        return tblBorders
+
+
+    @classmethod
+    def getTableTitleLocation(cls, tbl):
+        location = 0
+        # 从表格往前找标题
+        while location > -3:
+            location -= 1
+            node = tbl.previousSibling
+            if node.tagName == 'w:p':
+                text = Util.getFullText(node)
+                if re.search('^表[\s]?[1-9][0-9]*\.[1-9][0-9]*', text):
+                    return node, text, location
+        location = 0
+        # 从表格往后找标题
+        while location > 3:
+            location += 1
+            node = tbl.nextSibling
+            if node.tagName == 'w:p':
+                text = Util.getFullText(node)
+                if re.search('^表[\s]?[1-9][0-9]*\.[1-9][0-9]*', text):
+                    return node, text, location
+        return None, None, None
+
+    # 获取正文中有边框的表格（可以过滤一些使用表格格式，但作者本意不是表格的表格）
+    @classmethod
+    def getTableWithBorders(cls, styles):
+        for node in Util.getChildNodesOfNormalText():
+            if node.tagName == 'w:tbl':
+                contain = 0
+                if cls.getTableBorders(node, styles):
+                    tblBorders = cls.getTableBorders(node, styles)
+                    for border in tblBorders.childNodes :
+                        if border.getAttribute('w:val') != 'none':
+                            cls.tables_with_borders.append(node)
+                            contain = 1
+                            break
+                if contain == 0:
+                    for tc_borders in node.getElementsByTagName('w:tcBorders'):
+                        for border in tc_borders.childNodes:
+                            if border.getAttribute('w:val') != 'nil':
+                                cls.tables_with_borders.append(node)
+                                break
+                        else:
+                            continue
+                        break
+
     @classmethod
     def isThreeLineTable(cls, tbl, styles) -> bool:
 
-        # 从style中查找表格的总边框信息
-        def getTableBorders(tbl, styles):
-            tblPr = tbl.getElementsByTagName('w:tblPr')[0] if len(tbl.getElementsByTagName('w:tblPr')) > 0 else None
-            if tblPr is not None:
-                tblBorders = tblPr.getElementsByTagName('w:tblBorders')[0] if len(
-                    tblPr.getElementsByTagName('w:tblBorders')) > 0 else None
-                if tblBorders is None:
-                    tbl_style_id = tblPr.getElementsByTagName('w:tblStyle')[0].getAttribute('w:val') if len(
-                        tblPr.getElementsByTagName('w:tblStyle')) > 0 else None
-                    # 循环查找
-                    while tbl_style_id is not None:
-                        for style in styles.getElementsByTagName('w:style'):
-                            if style.getAttribute('w:styleId') == tbl_style_id:
-                                tbl_style_id = None
-                                tblBorders = style.getElementsByTagName('w:tblBorders')[0] if len(
-                                    style.getElementsByTagName('w:tblBorders')) > 0 else None
-                                if tblBorders is None:
-                                    if style.getElementsByTagName('w:basedOn'):
-                                        tbl_style_id = style.getElementsByTagName('w:basedOn')[0].getAttribute('w:val')
-                                break
-                if tblBorders is None:
-                    # 如果没有找到，在default style中找
-                    for style in styles.getElementsByTagName('w:style'):
-                        if style.getAttribute('w:type') == 'table' and style.getAttribute('w:default') == '1':
-                            tblBorders = style.getElementsByTagName('w:tblBorders')[0] if style.getElementsByTagName(
-                                'w:tblBorders') else None
-
-            return tblBorders
-
         # 收集表格的总边框信息
-        tblBorders = getTableBorders(tbl, styles)
+        tblBorders = cls.getTableBorders(tbl, styles)
         tbl_top = 'none'
         tbl_bottom = 'none'
         tbl_left = 'none'
@@ -49,17 +107,23 @@ class Table:
         tbl_insideH = 'none'
         tbl_insideV = 'none'
         if tblBorders is not None:
-            tbl_top = tblBorders.getElementsByTagName('w:top')[0].getAttribute('w:val') if tblBorders.getElementsByTagName(
+            tbl_top = tblBorders.getElementsByTagName('w:top')[0].getAttribute(
+                'w:val') if tblBorders.getElementsByTagName(
                 'w:top') else 'none'
-            tbl_bottom = tblBorders.getElementsByTagName('w:bottom')[0].getAttribute('w:val') if tblBorders.getElementsByTagName(
+            tbl_bottom = tblBorders.getElementsByTagName('w:bottom')[0].getAttribute(
+                'w:val') if tblBorders.getElementsByTagName(
                 'w:bottom') else 'none'
-            tbl_left = tblBorders.getElementsByTagName('w:left')[0].getAttribute('w:val') if tblBorders.getElementsByTagName(
+            tbl_left = tblBorders.getElementsByTagName('w:left')[0].getAttribute(
+                'w:val') if tblBorders.getElementsByTagName(
                 'w:left') else 'none'
-            tbl_right = tblBorders.getElementsByTagName('w:right')[0].getAttribute('w:val') if tblBorders.getElementsByTagName(
+            tbl_right = tblBorders.getElementsByTagName('w:right')[0].getAttribute(
+                'w:val') if tblBorders.getElementsByTagName(
                 'w:right') else 'none'
-            tbl_insideV = tblBorders.getElementsByTagName('w:insideV')[0].getAttribute('w:val') if tblBorders.getElementsByTagName(
+            tbl_insideV = tblBorders.getElementsByTagName('w:insideV')[0].getAttribute(
+                'w:val') if tblBorders.getElementsByTagName(
                 'w:insideV') else 'none'
-            tbl_insideH = tblBorders.getElementsByTagName('w:insideH')[0].getAttribute('w:val') if tblBorders.getElementsByTagName(
+            tbl_insideH = tblBorders.getElementsByTagName('w:insideH')[0].getAttribute(
+                'w:val') if tblBorders.getElementsByTagName(
                 'w:insideH') else 'none'
 
         first_bottom = True
@@ -154,3 +218,23 @@ class Table:
                         if tbl_bottom == 'none':
                             return False
         return True
+
+    @classmethod
+    def addTitleErrorMessage(cls, tbl, p, error_message):
+        if '表格缺少标题' in error_message:
+            p = Util.doc.createElement('w:p')
+            ppr = Util.doc.createElement('w:pPr')
+            pstyle = Util.doc.createElement('w:pStyle')
+            pstyle.setAttribute('w:val', 'table_error')
+            ppr.appendChild(pstyle)
+            r = Util.doc.createElement('w:r')
+            t = Util.doc.createElement('w:t')
+            text_node = Util.doc.createTextNode(error_message)
+            t.appendChild(text_node)
+            r.appendChild(t)
+            p.appendChild(ppr)
+            p.appendChild(r)
+            Util.doc.childNodes[0].childNodes[0].insertBefore(p, tbl)
+
+        else:
+            Util.addMark(p, error_message)
