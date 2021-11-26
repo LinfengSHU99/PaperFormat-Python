@@ -17,7 +17,10 @@ class Util:
     normal_run_property = {'eastAsia': "宋体", 'ascii': "Times New Roman", 'sz': "24", 'szCs': None, 'kern': None}
     # 目录字符串列表
     content_text_list = []
-
+    # 以下数值20/磅
+    left_margin = 0
+    right_margin = 0
+    page_width = 11906
     # dir = 'C:\\Users\\S\\Desktop\\论文格式'
 
 
@@ -49,6 +52,16 @@ class Util:
                 newf.write(direction)
 
         newf.close()
+
+    # 获得页边距信息
+    @classmethod
+    def getMargin(cls):
+        for node in reversed(Util.doc.childNodes[0].childNodes[0].childNodes):
+            if node.tagName == 'w:sectPr':
+                cls.left_margin = int(node.getElementsByTagName('w:pgMar')[0].getAttribute('w:left'))
+                cls.right_margin = int(node.getElementsByTagName('w:pgMar')[0].getAttribute('w:right'))
+                break
+
 
     # 获取一个节点的所有文字
     @classmethod
