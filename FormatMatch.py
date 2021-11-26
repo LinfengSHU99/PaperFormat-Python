@@ -25,6 +25,7 @@ table_title_paragraph_property = {'jc': 'center', 'line': '360', 'lineRule': 'au
                                   'after': None,
                                   'afterLines': None, 'firstLine': None, 'firstLineChars': None}
 
+table_normal_run_property = {'eastAsia': "宋体", 'ascii': "Times New Roman", 'sz': "21", 'szCs': None, 'kern': None}
 
 def matchNormal(doc):
     reference_run_property = None
@@ -61,18 +62,27 @@ def matchNormal(doc):
 
 def matchTable():
     for tbl in Table.tables_with_borders:
+        # 检测表格标题
         p, tbl_title, location = Table.getTableTitleLocation(tbl)
         error_message = ''
         if not Table.isThreeLineTable(tbl, Util.styles):
             error_message += '不是三线表 '
         if tbl_title is None:
             error_message += '表格缺少标题 '
-
         else:
             if location > 0:
                 error_message += '表格标题应在表格上方 '
+            if re.search('[.。，！；‘;、》《：“]$', tbl_title):
+                error_message += '表格标题最后不应有标点 '
             error_message += Util.correctParagraphProperty(p, table_title_paragraph_property)
             for r in p.getElementsByTagName('w:r'):
                 if not Util.correctRunProperty(r, table_title_run_property):
                     Util.setRed(r)
         Table.addTitleErrorMessage(tbl, p, error_message)
+
+        # 检查表格正文的run格式
+        for run in tbl.getElementsByTagName('w:r'):
+            if run.getElementsByTagName('w:t'):
+                if Util.correctRunProperty(run, table_normal_run_property) is False:
+                    Util.setRed(run)
+

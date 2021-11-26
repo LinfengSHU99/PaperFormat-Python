@@ -7,7 +7,6 @@ from xml.dom import minidom
 from Utildom import Util
 
 
-# TODO: 有一些表格实际上不是表格而是公式，如何识别出这些作者本意不是表格的表格，忽略它们，是下一个解决的问题
 
 class Table:
     doc = Util.doc
