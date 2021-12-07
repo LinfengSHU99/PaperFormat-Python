@@ -29,6 +29,7 @@ class Util:
     def setUp(cls):
         # 将所有目录段落加入一个列表
         cls.getContent()
+        cls.getMargin()
 
 
     @classmethod
@@ -557,6 +558,8 @@ class Util:
     @classmethod
     def correctRunProperty(cls, run, reference_run_property) -> bool:
         propertydict = cls.getRunProperties(run)
+        # text = ''
+        # if run.getElementsByTagName('w:t'):
         text = run.getElementsByTagName('w:t')[0].childNodes[0].data
         if re.search(re.compile("[\u4E00-\u9FA5]"), text):
             if propertydict['eastAsia'] != reference_run_property['eastAsia'] and reference_run_property[

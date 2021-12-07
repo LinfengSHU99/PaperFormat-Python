@@ -4,7 +4,7 @@ import re
 from lxml import etree
 import sys
 from xml.dom import minidom
-
+from Figure import Figure
 import AddStyle
 from Utildom import Util
 from Table import Table
@@ -26,6 +26,12 @@ table_title_paragraph_property = {'jc': 'center', 'line': '360', 'lineRule': 'au
                                   'afterLines': None, 'firstLine': None, 'firstLineChars': None}
 
 table_normal_run_property = {'eastAsia': "宋体", 'ascii': "Times New Roman", 'sz': "21", 'szCs': None, 'kern': None}
+
+figure_title_run_property = {'eastAsia': "宋体", 'ascii': "Times New Roman", 'sz': "21", 'szCs': None, 'kern': None}
+figure_title_paragraph_property = {'jc': 'center', 'line': '360', 'lineRule': 'auto', 'before': None,
+                                  'beforeLines': None,
+                                  'after': None,
+                                  'afterLines': None, 'firstLine': None, 'firstLineChars': None}
 
 def matchNormal(doc):
     reference_run_property = None
@@ -68,7 +74,7 @@ def matchTable():
         if not Table.isThreeLineTable(tbl, Util.styles):
             error_message += '不是三线表 '
         if tbl_title is None:
-            error_message += '表格缺少标题 '
+            error_message += '表格缺少标题或标题为以表字开头 '
         else:
             if location > 0:
                 error_message += '表格标题应在表格上方 '
@@ -85,4 +91,28 @@ def matchTable():
             if run.getElementsByTagName('w:t'):
                 if Util.correctRunProperty(run, table_normal_run_property) is False:
                     Util.setRed(run)
+
+def matchFigure():
+    for fig in Figure.figures:
+        p, figure_title, location = Figure.getFigureTitleLocation(fig)
+        error_message = ''
+        if Figure.containText(fig):
+            error_message += '图应单独成段 '
+        if figure_title is None:
+            error_message += '图缺少标题或标题为以图字开头 '
+        else:
+            if location < 0:
+                error_message += '图标题应在图下方 '
+            if re.search('[.。，！；‘;、》《：“]$', figure_title):
+                error_message += '图标题最后不应有标点 '
+            error_message += Util.correctParagraphProperty(p, figure_title_paragraph_property)
+            for r in p.getElementsByTagName('w:r'):
+                if r.getElementsByTagName('w:t') and not Util.correctRunProperty(r, figure_title_run_property):
+                    Util.setRed(r)
+        for r in fig.getElementsByTagName('w:r'):
+            if Figure.exceedMargin(r):
+                error_message += '图宽度超过页边距 '
+                break
+        Figure.addTitleErrorMessage(fig, p, error_message)
+
 

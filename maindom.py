@@ -8,7 +8,7 @@ import FormatMatch
 import AddStyle
 from Utildom import Util
 from Table import Table
-
+from Figure import Figure
 
 # dir = 'C:\\Users\\S\\Desktop\\论文格式'
 dir = 'C:\\Users\\97498\\Desktop\\论文格式'
@@ -88,10 +88,10 @@ for tbl in Table.tables_with_borders:
         text += t.childNodes[0].data
     print(text)
 
-
+Figure.setup()
 FormatMatch.matchNormal(doc)
 FormatMatch.matchTable()
-
+FormatMatch.matchFigure()
 
 Util.zipToDocx()
 os.chdir('../')  # 切换工作目录至原来的路径

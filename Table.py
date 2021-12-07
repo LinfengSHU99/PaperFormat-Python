@@ -224,7 +224,7 @@ class Table:
             p = Util.doc.createElement('w:p')
             ppr = Util.doc.createElement('w:pPr')
             pstyle = Util.doc.createElement('w:pStyle')
-            pstyle.setAttribute('w:val', 'table_error')
+            pstyle.setAttribute('w:val', 'error')
             ppr.appendChild(pstyle)
             r = Util.doc.createElement('w:r')
             t = Util.doc.createElement('w:t')

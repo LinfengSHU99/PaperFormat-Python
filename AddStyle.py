@@ -32,9 +32,9 @@ def r():
 
     style_tbl_title_error = styles.createElement('w:style')
     style_tbl_title_error.setAttribute('w:type', 'paragraph')
-    style_tbl_title_error.setAttribute('w:styleId', 'table_error')
+    style_tbl_title_error.setAttribute('w:styleId', 'error')
     name = styles.createElement('w:name')
-    name.setAttribute('w:val', 'table error')
+    name.setAttribute('w:val', 'error')
     style_tbl_title_error.appendChild(name)
     ppr = styles.createElement('w:pPr')
     jc = styles.createElement('w:jc')
