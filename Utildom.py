@@ -21,8 +21,8 @@ class Util:
     left_margin = 0
     right_margin = 0
     page_width = 11906
-    # dir = 'C:\\Users\\S\\Desktop\\论文格式'
 
+    # dir = 'C:\\Users\\S\\Desktop\\论文格式'
 
     # 一些准备性的工作，相当于初始化
     @classmethod
@@ -30,7 +30,6 @@ class Util:
         # 将所有目录段落加入一个列表
         cls.getContent()
         cls.getMargin()
-
 
     @classmethod
     def unzip(cls):
@@ -62,7 +61,6 @@ class Util:
                 cls.left_margin = int(node.getElementsByTagName('w:pgMar')[0].getAttribute('w:left'))
                 cls.right_margin = int(node.getElementsByTagName('w:pgMar')[0].getAttribute('w:right'))
                 break
-
 
     # 获取一个节点的所有文字
     @classmethod
@@ -103,12 +101,11 @@ class Util:
                     tmp = tmp2
         return lst[m]
 
-
     @classmethod
     def isTitle(cls, p) -> bool:
         text = cls.getFullText(p)
         type = 0
-        reg = ["[1-9][0-9]*[\s]+?", "[1-9][0-9]*[.．、\u4E00-\u9FA5]", "[1-9][0-9]*\.[1-9][0-9]*",
+        reg = ["[1-9][0-9]*[\s]+?", "[1-9][0-9]*[.．，．、\u4E00-\u9FA5]", "[1-9][0-9]*\.[1-9][0-9]*",
                "[1-9][0-9]*\.[1-9][0-9]*\.[1-9][0-9]*"]
         for i in range(len(reg)):
             reg[i] = re.compile(reg[i])
@@ -135,17 +132,22 @@ class Util:
                         for abstract_num in cls.numbering.getElementsByTagName('w:abstractNum'):
                             if abstract_num.getAttribute('w:abstractNumId') == abstract_numid.getAttribute('w:val'):
                                 for level in abstract_num.getElementsByTagName('w:lvl'):
-                                    if level.getAttribute('w:ilvl') == '0' and level.getElementsByTagName('w:lvlText')[0].getAttribute('w:val') != '%1' and level.getElementsByTagName('w:lvlText')[0].getAttribute('w:val') != '%1.':
+                                    if level.getAttribute('w:ilvl') == '0' and level.getElementsByTagName('w:lvlText')[
+                                        0].getAttribute('w:val') != '%1' and level.getElementsByTagName('w:lvlText')[
+                                        0].getAttribute('w:val') != '%1.':
                                         match = False
                                         break
-                                    elif level.getAttribute('w:ilvl') == '1' and level.getElementsByTagName('w:lvlText')[0].getAttribute('w:val') != '%1.%2':
+                                    elif level.getAttribute('w:ilvl') == '1' and \
+                                            level.getElementsByTagName('w:lvlText')[0].getAttribute('w:val') != '%1.%2':
                                         for s in cls.content_text_list:
-                                            if cls.levenshteinDistance(text, re.sub('[0-9\.．\s]', '', s)) < len(re.sub('[0-9\.．\s]', '', s)) * 0.2:
+                                            if cls.levenshteinDistance(text, re.sub('[0-9\.．\s]', '', s)) < len(
+                                                    re.sub('[0-9\.．\s]', '', s)) * 0.2:
                                                 match = True
                                                 break
                                         break
-                                    elif level.getAttribute('w:ilvl') == '2' :
-                                        if level.getElementsByTagName('w:lvlText')[0].getAttribute('w:val') != '%1.%2.%3':
+                                    elif level.getAttribute('w:ilvl') == '2':
+                                        if level.getElementsByTagName('w:lvlText')[0].getAttribute(
+                                                'w:val') != '%1.%2.%3':
                                             match = False
                                             break
                                         match = True
@@ -153,7 +155,7 @@ class Util:
                                 break
                         break
 
-            if type == 1:  # 若匹配的样式是1. xxxx的样式，则查找目录是否有相同的内容，如果有，则判断为标题。因为有些字数少的正文的编号项目也有可能匹配成功。
+            if type == 1 or type == 0:  # 若匹配的样式是1. xxxx的样式，则查找目录是否有相同的内容，如果有，则判断为标题。因为有些字数少的正文的编号项目也有可能匹配成功。
                 for t in cls.content_text_list:
                     if re.sub('[0-9\.．\s]', '', text) in re.sub('[0-9\.．\s]', '', t):
                         break
@@ -244,7 +246,7 @@ class Util:
         if len(text) < 30 and (re.search(re.compile('^[1-9]+'), text) or re.search(re.compile('^摘(\s+)?要'), text) or
                                re.search(re.compile('^致(\s+)?谢'), text) or re.search(re.compile('^参考文献'), text) or
                                re.search(re.compile('^附(\s+)?录'), text) or re.search(
-                             re.compile('^abstract', re.IGNORECASE), text)):
+                    re.compile('^abstract', re.IGNORECASE), text)):
             if re.search(re.compile('[)）]$'), text):
                 if re.search(re.compile('[(（][0-9]+[)）]$'), text):
                     return True
@@ -265,7 +267,8 @@ class Util:
         for i in range(len(childnode_list)):
             if cls.isContent(childnode_list[i]):
                 location_after_content = i
-            if childnode_list[i].tagName == 'w:p' and cls.getFullText(childnode_list[i]).replace(' ','') == '参考文献' and i > location_after_content:
+            if childnode_list[i].tagName == 'w:p' and cls.getFullText(childnode_list[i]).replace(' ',
+                                                                                                 '') == '参考文献' and i > location_after_content:
                 location_before_reference = i
         return childnode_list[location_after_content + 1:location_before_reference]
 
@@ -273,7 +276,8 @@ class Util:
     @classmethod
     def isPicTitle(cls, p) -> bool:
         text = cls.getFullText(p)
-        if len(text) < 30 and text.find(',') == -1 and text.find('，') == -1 and re.search('^[图][0-9]', re.sub('\s', '', text)):
+        if len(text) < 30 and text.find(',') == -1 and text.find('，') == -1 and re.search('^[图][0-9]',
+                                                                                          re.sub('\s', '', text)):
             return True
         return False
 
@@ -281,9 +285,11 @@ class Util:
     @classmethod
     def isTabTitle(cls, p) -> bool:
         text = cls.getFullText(p)
-        if len(text) < 30 and text.find(',') == -1 and text.find('，') == -1 and re.search('^[表][0-9]', re.sub('\s', '', text)):
+        if len(text) < 30 and text.find(',') == -1 and text.find('，') == -1 and re.search('^[表][0-9]',
+                                                                                          re.sub('\s', '', text)):
             return True
         return False
+
     # 获取一个Run里的所有与字有关(rPr)的里的格式，以字典返回。
     @classmethod
     def getRunProperties(cls, run) -> dict:
@@ -556,23 +562,24 @@ class Util:
 
     # 检测rPr属性是否符合给定的参考属性，不需要对比的属性在参考属性里设置为None
     @classmethod
-    def correctRunProperty(cls, run, reference_run_property) -> bool:
+    def correctRunProperty(cls, run, reference_run_property) -> list:
         propertydict = cls.getRunProperties(run)
+        error_type_list = []
         # text = ''
         # if run.getElementsByTagName('w:t'):
         text = run.getElementsByTagName('w:t')[0].childNodes[0].data
         if re.search(re.compile("[\u4E00-\u9FA5]"), text):
             if propertydict['eastAsia'] != reference_run_property['eastAsia'] and reference_run_property[
                 'eastAsia'] is not None:
-                return False
+                error_type_list += ['eastAsia']
         if re.search(re.compile("[0-9a-zA-z]"), text):
             if propertydict['ascii'] != reference_run_property['ascii'] and reference_run_property['ascii'] is not None:
-                return False
+                error_type_list += ['ascii']
         for key in propertydict.keys():
             if key != 'eastAsia' and key != 'ascii':
                 if propertydict[key] != reference_run_property[key] and reference_run_property[key] is not None:
-                    return False
-        return True
+                    error_type_list += [key]
+        return error_type_list
 
     # 检测段落格式是否符合给定的参考属性，不需要对比的属性在参考属性里设置为None, 返回错误信息字符串
     @classmethod
@@ -582,7 +589,7 @@ class Util:
         if propertydict['firstLineChars'] is not None:
             if propertydict['firstLineChars'] != reference_paragraph_property[
                 'firstLineChars'] and reference_paragraph_property['firstLineChars'] is not None:
-                text += '缩进错误 '
+                text += '【缩进错误】 '
             propertydict['firstLine'] = reference_paragraph_property['firstLine']  # 当firstLineChars存在时，忽略firstLine这个属性
 
         for key in propertydict.keys():
@@ -590,19 +597,19 @@ class Util:
                 if propertydict[key] != reference_paragraph_property[key] and reference_paragraph_property[
                     key] is not None:
                     if key == 'jc':
-                        text += '对齐方式错误 '
+                        text += '【对齐方式错误】 '
                     if key == 'line' or key == 'lineRule':
-                        text += '行间距错误 '
+                        text += '【行间距错误】 '
                     if key == 'firstLine':
-                        text += '缩进错误 '
+                        text += '【缩进错误】 '
         return text
 
     # 将这个run的文字背景设置为红色，当一个run中的格式出错时使用该函数
     @classmethod
-    def setRed(cls, run):
+    def setYellow(cls, run):
         rpr_list = run.getElementsByTagName('w:rPr')
         highlight = cls.doc.createElement('w:highlight')
-        highlight.setAttribute('w:val', 'red')
+        highlight.setAttribute('w:val', 'yellow')
         if rpr_list:
             rpr = rpr_list[0]
             rpr.appendChild(highlight)
@@ -612,9 +619,36 @@ class Util:
             t = run.getElementsByTagName('w:t')[0]
             run.insertBefore(rpr, t)
 
+    # 在格式错误的run后添加错误信息，若错误信息为空则不会输出
+    @classmethod
+    def addMarkR(cls, p, run, error_message_list):
+        if len(error_message_list) == 0:
+            return
+        new_run = cls.doc.createElement('w:r')
+        rpr = cls.doc.createElement('w:rPr')
+        vertAlign = cls.doc.createElement('w:vertAlign')
+        vertAlign.setAttribute('w:val', 'subscript')
+        color = cls.doc.createElement('w:color')
+        color.setAttribute('w:val', 'red')
+        t = cls.doc.createElement('w:t')
+        error_message = ''
+        for message in error_message_list:
+            error_message = error_message + message
+        text_node = cls.doc.createTextNode(error_message)
+        t.appendChild(text_node)
+        rpr.appendChild(vertAlign)
+        rpr.appendChild(color)
+        new_run.appendChild(rpr)
+        new_run.appendChild(t)
+        cls.setYellow(new_run)
+        if run is not None:
+            p.insertBefore(new_run, run)
+        else:
+            p.appendChild(new_run)
+
     # 在有格式错误的段落最后添加格式错误的标记
     @classmethod
-    def addMark(cls, p, error_message):
+    def addMarkP(cls, p, error_message):
         run = cls.doc.createElement('w:r')
         rpr = cls.doc.createElement('w:rPr')
         vertAlign = cls.doc.createElement('w:vertAlign')

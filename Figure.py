@@ -105,4 +105,4 @@ class Figure:
             Util.doc.childNodes[0].childNodes[0].insertBefore(p, fig.nextSibling)
 
         else:
-            Util.addMark(p, error_message)
+            Util.addMarkP(p, error_message)

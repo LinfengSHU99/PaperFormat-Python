@@ -236,4 +236,4 @@ class Table:
             Util.doc.childNodes[0].childNodes[0].insertBefore(p, tbl)
 
         else:
-            Util.addMark(p, error_message)
+            Util.addMarkP(p, error_message)
